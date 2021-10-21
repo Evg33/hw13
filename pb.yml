@@ -30,8 +30,8 @@
     command: bash -c "cd hw07 && docker-compose run bldr"
     register: output
 
-  - debug:
-      var: output
+#  - debug:
+#      var: output
 
   - name: copy war to S3://hw13
     aws_s3:
