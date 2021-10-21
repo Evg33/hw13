@@ -1,0 +1,91 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: create build env
+  hosts: build
+  become: yes
+
+  tasks:
+
+  - name: Ensure pkgs is present
+    apt:
+      name: [docker.io, python3-pip, awscli]
+      update_cache: yes
+      cache_valid_time: 3600
+
+  - name: pip docker-compose
+    pip:
+      name: [docker-compose, botocore, boto3, awscli]
+
+  - name: git checkout repo from hw 7
+    git:
+      repo: 'https://github.com/Evg33/test07.git'
+      dest: hw07
+
+  - name: Tear down existing services
+    docker_compose:
+      project_src: hw07
+      state: absent
+
+  - name: Run docker-compose run bldr
+    command: bash -c "cd hw07 && docker-compose run bldr"
+    register: output
+
+  - debug:
+      var: output
+
+  - name: copy war to S3://hw13
+    aws_s3:
+      bucket: hw13
+      object: /hello-1.0.war
+      src: /home/ubuntu/hw07/web/src/hello-1.0.war
+      mode: put
+
+- name: create prod env
+  hosts: prod
+  become: yes
+
+  tasks:
+
+  - name: Ensure pkgs is present
+    apt:
+      name: [docker.io, python3-pip, awscli]
+      update_cache: yes
+      cache_valid_time: 3600
+
+  - name: pip docker-compose
+    pip:
+      name: [docker-compose, botocore, boto3, awscli]
+
+  - name: copy war from S3://hw13
+    aws_s3:
+      bucket: hw13
+      object: /hello-1.0.war
+      dest: /tmp/hello-1.0.war
+      mode: get
+
+  - name: Stop container
+    docker_container:
+      name: web
+      state: absent
+
+
+  - name: Start container
+    docker_container:
+      name: web
+      image: tomcat:alpine
+      state: started
+      volumes:
+       - /tmp/hello-1.0.war:/usr/local/tomcat/webapps/hello-1.0.war
+      ports:
+       - "80:8080"
+      auto_remove: yes
+      pull: yes
+      recreate: yes
+
+  - name: Get my public IP
+    ipify_facts:
+    register: public_ip
+
+  - name: Show url
+    debug: msg="    http://{{ hostvars[inventory_hostname]['ipify_public_ip'] }}/hello-1.0    "
+

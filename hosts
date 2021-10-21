@@ -1,0 +1,4 @@
+[build]
+bldr001 ansible_host=ec2-13-49-68-6.eu-north-1.compute.amazonaws.com
+[prod]
+prod001 ansible_host=ec2-13-51-194-59.eu-north-1.compute.amazonaws.com
