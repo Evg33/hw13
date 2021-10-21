@@ -40,6 +40,9 @@
       src: /home/ubuntu/hw07/web/src/hello-1.0.war
       mode: put
 
+
+
+
 - name: create prod env
   hosts: prod
   become: yes
@@ -67,7 +70,6 @@
     docker_container:
       name: web
       state: absent
-
 
   - name: Start container
     docker_container:
